@@ -7,7 +7,14 @@ import { User } from "@/types/user.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import Image from "next/image";
 import { exportUsersToCSV } from "@/lib/exportCsv";
 
@@ -19,16 +26,24 @@ export default function UsersTable() {
 
     const { data, isLoading, isError } = useUsers(page);
 
+    const usersWithRole = useMemo(() => {
+        return (data?.data ?? []).map((user) => ({
+            ...user,
+            role: user.id % 2 === 0 ? ("admin" as const) : ("user" as const),
+        }));
+    }, [data]);
+
     const filteredUsers = useMemo(() => {
-        return (data?.data ?? [])
+        return usersWithRole
             .filter((user) => {
                 const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
                 return (
-                    fullName.includes(search.toLowerCase()) || user.email.toLowerCase().includes(search.toLowerCase())
+                    fullName.includes(search.toLowerCase()) ||
+                    user.email.toLowerCase().includes(search.toLowerCase())
                 );
             })
             .filter((user) => roleFilter === "all" || user.role === roleFilter);
-    }, [data, search, roleFilter]);
+    }, [usersWithRole, search, roleFilter]);
 
     const columns: ColumnDef<User>[] = [
         {
@@ -41,7 +56,11 @@ export default function UsersTable() {
                 />
             ),
             cell: ({ row }) => (
-                <input type="checkbox" checked={row.getIsSelected()} onChange={row.getToggleSelectedHandler()} />
+                <input
+                    type="checkbox"
+                    checked={row.getIsSelected()}
+                    onChange={row.getToggleSelectedHandler()}
+                />
             ),
         },
         {
@@ -70,7 +89,9 @@ export default function UsersTable() {
             accessorKey: "role",
             header: "Rol",
             cell: ({ row }) => (
-                <Badge variant={row.original.role === "admin" ? "default" : "secondary"}>{row.original.role}</Badge>
+                <Badge variant={row.original.role === "admin" ? "default" : "secondary"}>
+                    {row.original.role}
+                </Badge>
             ),
         },
     ];
@@ -95,22 +116,22 @@ export default function UsersTable() {
 
     return (
         <div className="space-y-4">
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 items-center">
                 <Input
                     placeholder="Buscar por nombre o email..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="max-w-sm"
                 />
-                <Button variant={roleFilter === "all" ? "default" : "outline"} onClick={() => setRoleFilter("all")}>
-                    Todos
-                </Button>
-                <Button variant={roleFilter === "admin" ? "default" : "outline"} onClick={() => setRoleFilter("admin")}>
-                    Admin
-                </Button>
-                <Button variant={roleFilter === "user" ? "default" : "outline"} onClick={() => setRoleFilter("user")}>
-                    User
-                </Button>
+                {(["all", "admin", "user"] as const).map((r) => (
+                    <Button
+                        key={r}
+                        variant={roleFilter === r ? "default" : "outline"}
+                        onClick={() => setRoleFilter(r)}
+                    >
+                        {r === "all" ? "Todos" : r}
+                    </Button>
+                ))}
                 <Button variant="outline" onClick={() => exportUsersToCSV(filteredUsers)}>
                     Exportar CSV
                 </Button>
@@ -131,7 +152,10 @@ export default function UsersTable() {
                         <TableRow key={headerGroup.id}>
                             {headerGroup.headers.map((header) => (
                                 <TableHead key={header.id}>
-                                    {flexRender(header.column.columnDef.header, header.getContext())}
+                                    {flexRender(
+                                        header.column.columnDef.header,
+                                        header.getContext(),
+                                    )}
                                 </TableHead>
                             ))}
                         </TableRow>
@@ -155,7 +179,12 @@ export default function UsersTable() {
                     Página {data?.page} de {data?.total_pages}
                 </span>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => p - 1)}
+                        disabled={page === 1}
+                    >
                         Anterior
                     </Button>
                     <Button
