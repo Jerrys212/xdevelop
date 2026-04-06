@@ -9,25 +9,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
 export default function PostsList() {
     const { data: posts, isLoading, isError } = usePosts();
     const { mutate: createPost, isPending } = useCreatePost();
-    const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
+    const { addFavoritePost, removeFavoritePost, isFavoritePost, favoritePosts } =
+        useFavoritesStore();
     const { user } = useAuthStore();
 
     const [userFilter, setUserFilter] = useState("");
     const [search, setSearch] = useState("");
     const [open, setOpen] = useState(false);
+    const [showFavorites, setShowFavorites] = useState(false);
     const [newPost, setNewPost] = useState({ title: "", body: "" });
 
     const filteredPosts = useMemo(() => {
-        return (posts ?? [])
+        const base = showFavorites ? favoritePosts : (posts ?? []);
+        return base
             .filter((post) => post.title.toLowerCase().includes(search.toLowerCase()))
             .filter((post) => (userFilter ? post.userId === Number(userFilter) : true));
-    }, [posts, search, userFilter]);
+    }, [posts, favoritePosts, search, userFilter, showFavorites]);
 
     const handleCreate = () => {
         createPost(
@@ -46,21 +55,27 @@ export default function PostsList() {
 
     return (
         <div className="space-y-4">
-            <div className="flex gap-2 flex-wrap items-center justify-between">
-                <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 items-center justify-between">
+                <div className="flex gap-2 items-center">
                     <Input
                         placeholder="Buscar por título..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="max-w-sm"
+                        className="w-64"
                     />
                     <Input
-                        placeholder="Filtrar por userId..."
+                        placeholder="userId..."
                         value={userFilter}
                         onChange={(e) => setUserFilter(e.target.value)}
-                        className="w-40"
+                        className="w-28"
                         type="number"
                     />
+                    <Button
+                        variant={showFavorites ? "default" : "outline"}
+                        onClick={() => setShowFavorites((v) => !v)}
+                    >
+                        ⭐ Favoritos {favoritePosts.length > 0 && `(${favoritePosts.length})`}
+                    </Button>
                 </div>
 
                 {user?.role === "admin" && (
@@ -77,17 +92,25 @@ export default function PostsList() {
                                     <Label>Título</Label>
                                     <Input
                                         value={newPost.title}
-                                        onChange={(e) => setNewPost((p) => ({ ...p, title: e.target.value }))}
+                                        onChange={(e) =>
+                                            setNewPost((p) => ({ ...p, title: e.target.value }))
+                                        }
                                     />
                                 </div>
                                 <div className="space-y-1">
                                     <Label>Contenido</Label>
                                     <Input
                                         value={newPost.body}
-                                        onChange={(e) => setNewPost((p) => ({ ...p, body: e.target.value }))}
+                                        onChange={(e) =>
+                                            setNewPost((p) => ({ ...p, body: e.target.value }))
+                                        }
                                     />
                                 </div>
-                                <Button onClick={handleCreate} disabled={isPending} className="w-full">
+                                <Button
+                                    onClick={handleCreate}
+                                    disabled={isPending}
+                                    className="w-full"
+                                >
                                     {isPending ? "Creando..." : "Crear"}
                                 </Button>
                             </div>
@@ -97,6 +120,11 @@ export default function PostsList() {
             </div>
 
             <div className="grid gap-3">
+                {filteredPosts.length === 0 && showFavorites && (
+                    <p className="text-center py-8 text-slate-500">
+                        No tienes posts favoritos aún.
+                    </p>
+                )}
                 {filteredPosts.map((post) => (
                     <Card key={post.id}>
                         <CardHeader className="pb-2">
@@ -108,10 +136,12 @@ export default function PostsList() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() =>
-                                            isFavorite(post.id) ? removeFavorite(post.id) : addFavorite(post)
+                                            isFavoritePost(post.id)
+                                                ? removeFavoritePost(post.id)
+                                                : addFavoritePost(post)
                                         }
                                     >
-                                        {isFavorite(post.id) ? "⭐" : "☆"}
+                                        {isFavoritePost(post.id) ? "⭐" : "☆"}
                                     </Button>
                                 </div>
                             </div>

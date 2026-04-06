@@ -3,22 +3,21 @@ import { persist } from "zustand/middleware";
 import { Post } from "@/types/post.types";
 
 interface FavoritesState {
-    favorites: Post[];
-    addFavorite: (post: Post) => void;
-    removeFavorite: (id: number) => void;
-    isFavorite: (id: number) => boolean;
+    favoritePosts: Post[];
+    addFavoritePost: (post: Post) => void;
+    removeFavoritePost: (id: number) => void;
+    isFavoritePost: (id: number) => boolean;
 }
 
 export const useFavoritesStore = create<FavoritesState>()(
     persist(
         (set, get) => ({
-            favorites: [],
-            addFavorite: (post) => set((state) => ({ favorites: [...state.favorites, post] })),
-            removeFavorite: (id) =>
-                set((state) => ({
-                    favorites: state.favorites.filter((p) => p.id !== id),
-                })),
-            isFavorite: (id) => get().favorites.some((p) => p.id === id),
+            favoritePosts: [],
+            addFavoritePost: (post) =>
+                set((state) => ({ favoritePosts: [...state.favoritePosts, post] })),
+            removeFavoritePost: (id) =>
+                set((state) => ({ favoritePosts: state.favoritePosts.filter((p) => p.id !== id) })),
+            isFavoritePost: (id) => get().favoritePosts.some((p) => p.id === id),
         }),
         { name: "favorites-storage" },
     ),
